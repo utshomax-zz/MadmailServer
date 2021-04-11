@@ -44,6 +44,7 @@ async function sendMail(mailopt) {
     const result = await transport.sendMail(mailOptions);
     return result;
   } catch (error) {
+    console.log(error)
     return error;
   }
 }
