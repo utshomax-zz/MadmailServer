@@ -1,4 +1,3 @@
-'use strict'
 const fastify = require('fastify')({ logger: true })
 const origins = (process.env.ORIGINS ? process.env.ORIGINS.split(',') : ['http://localhost:3000/','https://localhost:3000','http://localhost:3000','http://127.0.0.1:3000'])
 fastify.register(require('fastify-cors'),{
@@ -12,6 +11,7 @@ const CLIENT_ID = process.env.CLIENT_ID ;  //your client id
 const CLEINT_SECRET = process.env.CLEINT_SECRET; //your client secret
 const REDIRECT_URI = process.env.REDIRECT_URI ;  //https://developers.google.com/oauthplayground
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN ;  //your refresh token
+const TOKEN = process.env.TOKEN || 'devtoken'
 
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
@@ -50,20 +50,23 @@ async function sendMail(mailopt) {
 }
 
 fastify.post('/api/send',async (request, reply) => {
-  const {mailOptions} = request.body;
-   const res = await sendMail( mailOptions )
+  const {mailOptions,token} = request.body;
+  //well , a very basic auth !
+    if(TOKEN != token){
+      reply.code(401).send('Unauthorized!')
+    }
+   sendMail( mailOptions )
     .then((result) => {
       if(result.rejected.length > 0){
-        return `${result.accepted.length} Success , ${result.rejected.length} Failed.`
+        reply.code(201).send({success:result.accepted.length , failed : result.rejected.length})
       }
       else{
-        return "success!"
+        reply.code(200).send("success!")
       }
     } )
     .catch((error) => {
-      return "Somthing Went Wrong!"
+      reply.code(500).send("Mailer error !")
     });
-   return {Status : res};
 })
 
 fastify.get('/', async (request, reply) => {
